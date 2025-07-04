@@ -1,0 +1,191 @@
+_schema-version: 3.3.0
+ID: cpapp5
+version: 1.0.0
+description: "A simple CAP project."
+parameters:
+  enable-parallel-deployments: true
+  deploy_mode: html5-repo
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+modules:
+  - name: cpapp5-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      instances: 1
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: cpapp5-auth
+      - name: cpapp5-db
+      - name: cpapp5-destination
+
+  - name: cpapp5
+    type: approuter.nodejs
+    path: app/router
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api # must be used in xs-app.json as well
+          url: ~{srv-url}
+          forwardAuthToken: true
+      - name: cpapp5-auth
+      - name: cpapp5-html5-runtime
+      - name: cpapp5-destination
+    provides:
+      - name: app-api
+        properties:
+          app-protocol: ${protocol}
+          app-uri: ${default-uri}
+
+  - name: cpapp5-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+    requires:
+      - name: cpapp5-db
+
+  - name: cpapp5-app-deployer
+    type: com.sap.application.content
+    path: gen
+    requires:
+      - name: cpapp5-html5-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: app/
+      requires:
+        - name: cpapp5riskui5
+          artifacts:
+            - riskui5.zip
+          target-path: app/
+
+  - name: cpapp5riskui5
+    type: html5
+    path: app/riskui5
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm ci
+        - npm run build
+      supported-platforms:
+        []
+
+  - name: cpapp5-destinations
+    type: com.sap.application.content
+    requires:
+      - name: cpapp5-auth
+        parameters:
+          service-key:
+            name: cpapp5-auth-key
+      - name: cpapp5-html5-repo-host
+        parameters:
+          service-key:
+            name: cpapp5-html5-repo-host-key
+      - name: srv-api
+      - name: cpapp5-destination
+        parameters:
+          content-target: true
+    build-parameters:
+      no-source: true
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: cpapp5-html5-repository
+              ServiceInstanceName: cpapp5-html5-repo-host
+              ServiceKeyName: cpapp5-html5-repo-host-key
+              sap.cloud.service: cpapp5.service
+            - Name: cpapp5-auth
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: cpapp5-auth
+              ServiceKeyName: cpapp5-auth-key
+              sap.cloud.service: cpapp5.service
+
+resources:
+  - name: cpapp5-auth
+    type: org.cloudfoundry.managed-service
+    requires:
+      - name: app-api
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: cpapp5-${org}-${space}
+        tenant-mode: dedicated
+        role-collections:
+         - name: 'RiskManager5-${space}'
+           description: ManageRisks5
+           role-template-references:
+           - $XSAPPNAME.RiskManager5
+         - name: 'RiskViewer5-${space}'
+           description: View Risk5
+           role-template-references:
+           - $XSAPPNAME.RiskViewer5  
+        oauth2-configuration:
+          redirect-uris:
+            - https://~{app-api/app-uri}/**
+  - name: cpapp5-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+
+  - name: cpapp5-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+  - name: cpapp5-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+  - name: cpapp5-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            existing_destinations_policy: update
+            destinations:
+              - Name: srv-api
+                URL: ~{srv-api/srv-url}
+                Authentication: NoAuthentication
+                Type: HTTP
+                ProxyType: Internet
+                HTML5.ForwardAuthToken: true
+                HTML5.DynamicDestination: true
+              - Name: ui5
+                URL: https://ui5.sap.com
+                Authentication: NoAuthentication
+                Type: HTTP
+                ProxyType: Internet
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api # must be used in xs-app.json as well
+          url: ~{srv-url}
+          forwardAuthToken: true

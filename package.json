@@ -1,0 +1,40 @@
+{
+  "name": "cpapp5",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "repository": "<Add your repository here>",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@cap-js/hana": "^2.1.1",
+    "@sap/cds": "^9",
+    "@sap/xssec": "^4",
+    "express": "^4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@cap-js/cds-types": "^0.11.0",
+    "@cap-js/sqlite": "^2",
+    "@sap/cds-dk": ">=8"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch-riskui5": "cds watch --open riskui5/webapp/index.html?sap-ui-xx-viewCache=false"
+  },
+  "sapux": [
+    "app/riskui5"
+  ],
+  "cds": {
+    "requires": {
+      "[production]": {
+        "db": "hana",
+        "auth": "xsuaa"
+      },
+      "html5-runtime": true,
+      "destinations": true,
+      "workzone": true
+    }
+  }
+}

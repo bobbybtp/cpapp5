@@ -1,0 +1,31 @@
+{
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.RiskViewer5",
+      "description": "RiskViewer5"
+    },
+    {
+      "name": "$XSAPPNAME.RiskManager5",
+      "description": "RiskManager5"
+    }
+  ],
+  "attributes": [],
+  "role-templates": [
+    {
+      "name": "RiskViewer5",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.RiskViewer5"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "RiskManager5",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.RiskManager5"
+      ],
+      "attribute-references": []
+    }
+  ]
+}
