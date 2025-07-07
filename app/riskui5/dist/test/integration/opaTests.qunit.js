@@ -1,0 +1,2 @@
+sap.ui.require(["sap/fe/test/JourneyRunner","riskui5/test/integration/FirstJourney","riskui5/test/integration/pages/RisksList","riskui5/test/integration/pages/RisksObjectPage"],function(i,e,s,t){"use strict";var i=new i({launchUrl:sap.ui.require.toUrl("riskui5")+"/index.html"});i.run({pages:{onTheRisksList:s,onTheRisksObjectPage:t}},e.run)});
+//# sourceMappingURL=opaTests.qunit.js.map

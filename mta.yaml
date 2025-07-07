@@ -45,6 +45,7 @@ modules:
           forwardAuthToken: true
       - name: cpapp5-auth
       - name: cpapp5-html5-runtime
+      - name: cpapp5-html5-repo-host
       - name: cpapp5-destination
     provides:
       - name: app-api
